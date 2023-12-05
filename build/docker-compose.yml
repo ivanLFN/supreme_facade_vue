@@ -1,0 +1,62 @@
+# Docker compose for development purposes
+# this brings entire struck of containers and runs everything in one command
+---
+version: '3'
+
+networks:
+  backend:
+    name: backend-network
+  frontend:
+    name: frontend-network
+
+
+secrets:
+  firebase:
+    file: ./../.env
+
+services:
+  # setup load balancer
+  reverse-proxy:
+    image: traefik:v2.2
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80
+      # - 8080:8080
+      - 443:443
+    networks:
+      - backend
+  app:
+    image: "sw-web-vue:local-${TARGET:-development}"
+    build:
+      context: ./../
+      dockerfile: ./build/app/Dockerfile
+      target: "${TARGET:-development}"
+      secrets:
+        - firebase
+    environment:
+      - PORT=3000
+    ports:
+      - 5000:80
+      - 3080:8080
+      - 3000:3000
+    # entrypoint: tail -f /dev/null
+    networks:
+      - frontend
+    volumes:
+      - ./../src:/app/src
+      - ./../public:/app/public
+      - ./../package.json:/app/package.json
+      - ./../package-lock.json:/app/package-lock.json
+      - ./../vite.config.js:/app/vite.config.js
+      - ./../vue.config.js:/app/vue.config.js
+      - ./../.env:/app/.env
+      - ./../serviceAccount.json:/app/serviceAccount.json
+      - ./../.tmp/reports:/app/.tmp/reports
+      - ./../.eslintrc.js:/app/.eslintrc.js
+      - ./../babel.config.js:/app/babel.config.js

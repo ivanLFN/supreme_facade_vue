@@ -1,0 +1,7 @@
+.ci
+.docker
+node_modules
+serviceAccount.json
+.git
+.gitignore
+.env
